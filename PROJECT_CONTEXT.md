@@ -1,0 +1,237 @@
+# PROJECT_CONTEXT — Census Area Tracker
+
+> **Resume in a new chat:** Read this file, then continue from **§12 Current status** and **§13 Next tasks**.
+
+---
+
+## 1. Project purpose
+
+Personal **census duty coverage helper**: draw the assigned map boundary, walk the area with GPS on, see traveled path and approximate covered vs uncovered cells.
+
+**Non-goals:** Not official census software; no government API; no cloud sync in v1.
+
+---
+
+## 2. User decisions (frozen)
+
+| Decision | Choice |
+| -------- | ------ |
+| Language | **JavaScript** (React JSX), not TypeScript |
+| Platform | PWA — phone browser + Add to Home Screen |
+| Maps | Leaflet + OSM streets + Esri satellite + Esri labels overlay (free, no API key) |
+| Boundary | Draw polygon on map; optional GeoJSON import |
+| Data | Local only — IndexedDB via `idb` |
+| Workspace | `e:\Development\mini proj\census-tracker` |
+
+---
+
+## 3. Architecture overview
+
+```mermaid
+flowchart LR
+  subgraph setup [Setup]
+    Draw[BoundarySetup + leaflet-draw]
+    SaveArea[storage.saveArea]
+  end
+  subgraph field [Field]
+    GPS[useGeolocation]
+    Track[TrackScreen]
+    Grid[buildCoverageGrid + markVisitedCells]
+  end
+  Draw --> SaveArea
+  SaveArea --> Track
+  GPS --> Track
+  Track --> Grid
+```
+
+**Screens (`App.jsx`):** `areas` | `setup` | `track` | `history`
+
+---
+
+## 4. Tech stack & versions
+
+See `package.json`. Core:
+
+- React 19, Vite 8
+- react-leaflet 5, leaflet, leaflet-draw
+- @turf/turf 7
+- idb 8
+- vite-plugin-pwa
+
+---
+
+## 5. Repo map
+
+| File | Role |
+| ---- | ---- |
+| `src/main.jsx` | React entry |
+| `src/App.jsx` | Screen routing, nav, geolocation center on load |
+| `src/App.css` | Mobile-first dark UI |
+| `src/lib/storage.js` | IndexedDB: `areas`, `sessions` |
+| `src/lib/geo.js` | Grid, coverage %, distance, export, GeoJSON parse |
+| `src/lib/leafletIcons.js` | Fix Vite marker icon paths |
+| `src/hooks/useGeolocation.js` | watchPosition start/pause/stop |
+| `src/components/MapView.jsx` | MapContainer, streets/satellite tiles, `followMode` pan/none, fitBounds once |
+| `src/components/BoundarySetup.jsx` | Satellite/street toggle (no map remount), search jump, GeoJSON import |
+| `src/components/PolygonDrawTool.jsx` | Click-to-add polygon vertices, undo, close (replaces leaflet-draw) |
+| `src/components/TrackScreen.jsx` | GPS track, manual mark mode, undo mark, pan-only follow |
+| `src/components/CoverageLayer.jsx` | Green/red grid; clickable when `interactive` |
+| `src/components/AreaList.jsx` | List/create/delete areas |
+| `src/components/SessionHistory.jsx` | Completed sessions, export |
+| `src/components/HelpModal.jsx` | 3-step in-app help |
+| `vite.config.js` | React + PWA + OSM tile caching |
+
+---
+
+## 6. Data models
+
+### SavedArea
+
+```js
+{
+  id: string,           // crypto.randomUUID()
+  name: string,
+  boundary: Polygon,    // GeoJSON Polygon
+  createdAt: number,
+  gridCellSizeM: number // default 40
+}
+```
+
+### TrackPoint
+
+```js
+{ lat, lng, timestamp, accuracy }
+```
+
+### TrackingSession
+
+```js
+{
+  id, areaId, startedAt, endedAt?,
+  points: TrackPoint[],
+  visitedCellIds: string[],
+  status: 'active' | 'paused' | 'completed'
+}
+```
+
+### IndexedDB
+
+- DB: `census-tracker` v1
+- Stores: `areas` (key `id`), `sessions` (key `id`)
+
+---
+
+## 7. Algorithms
+
+| Item | Value / logic |
+| ---- | ------------- |
+| Accuracy filter | Skip points with `accuracy > 30` m |
+| Grid | `turf.squareGrid` with `mask: boundary`, cell size from `gridCellSizeM` |
+| Cell ID | `"lng_lat"` from cell center, 5 decimals |
+| Visited | Point inside cell polygon OR within 15 m of cell center |
+| Manual mark | Tap cell in mark mode → add `cell.id` to `visitedCellIds` |
+| `findCellAtPoint` | `booleanPointInPolygon` on tap lat/lng |
+| Polygon valid | `isValidClosedPolygon` — ring ≥ 4 pts, first ≈ last |
+| Polygon build | `buildPolygonFromVertices` / `verticesFromPolygon` in geo.js |
+| Inside boundary | `turf.booleanPointInPolygon` |
+| Map follow | `followMode: 'pan'` — `panTo` only, never resets zoom |
+
+---
+
+## 8. UI routes / screens
+
+| Screen | Component | Actions |
+| ------ | --------- | ------- |
+| Areas | `AreaList` | New area, edit, delete, start track |
+| Setup | `BoundarySetup` | Satellite+labels / Street toggle; Start drawing → tap corners → Close polygon; import, save |
+| Track | `TrackScreen` | Start/Pause/Stop, zoom freely, Mark cells manually + undo |
+| History | `SessionHistory` | List completed, export GeoJSON/GPX, delete |
+
+Bottom nav: Areas, History, Help (modal).
+
+---
+
+## 9. Geolocation & PWA notes
+
+- **HTTPS required** on real phones for geolocation (localhost OK for dev).
+- **Keep screen on** — background GPS limited, especially iOS.
+- Pre-load map tiles on Wi‑Fi before field (service worker caches OSM tiles).
+- Disclaimer shown: coverage is approximate.
+
+---
+
+## 10. Commands
+
+```bash
+npm install
+npm run dev      # http://localhost:5173
+npm run build    # output: dist/
+npm run preview  # preview production build
+```
+
+---
+
+## 11. Environment & hosting
+
+- No `.env` or secrets in v1.
+- Deploy `dist/` to Netlify / Vercel / GitHub Pages (HTTPS).
+- Nominatim search uses public API — polite use, needs network.
+
+---
+
+## 12. Current status
+
+- [x] Phase 1 — Map + boundary draw/save/load/delete
+- [x] Phase 2 — GPS tracking, polyline, session persist
+- [x] Phase 3 — Coverage grid + visited cells + %
+- [x] Phase 4 — PWA, UI, export, help modal
+- [x] JavaScript migration (removed TypeScript)
+- [x] README + PROJECT_CONTEXT
+- [x] Map UX — satellite toggle, polygon close hints, zoom fix, manual cell marking
+- [x] Map draw bugfixes — stable layer switch, satellite labels, custom polygon draw tool
+- [ ] Phase 5 — Optional: cloud sync, Capacitor, KML import
+
+---
+
+## 13. Next tasks
+
+1. Test satellite tiles + manual mark mode on real phone (HTTPS).
+2. Tune `gridCellSizeM` per environment (narrow lanes → smaller cells).
+3. Add edit grid cell size in area settings UI (optional).
+4. Consider Capacitor if background GPS with screen off is required.
+
+---
+
+## 14. Known bugs & workarounds
+
+| Issue | Workaround |
+| ----- | ---------- |
+| GPS drift | Walk street center; reduce cell size |
+| iOS background pause | Keep app in foreground |
+| Nominatim rate limits | Search sparingly; pan map manually |
+| Large areas → many grid cells | May slow map; increase cell size |
+| Zoom reset while tracking | Fixed — use pan-only follow, do not use `setView` on GPS ticks |
+| Polygon “stops” at 3 points | Fixed — custom draw tool; use Close polygon button (≥3 corners) |
+| Map resets on Satellite/Street | Fixed — do not put `mapStyle` in MapView `key`; tiles swap in place |
+| Satellite has no labels | Fixed — Esri Boundaries and Places overlay on imagery |
+
+---
+
+## 15. Future enhancements (Phase 5+)
+
+- Cloud sync / multi-device
+- Capacitor Android app
+- KML/shapefile import
+- Hindi UI
+- Alert when leaving boundary
+
+---
+
+## 16. Prompt snippet for new chat
+
+```
+Continue the Census Area Tracker PWA in e:\Development\mini proj\census-tracker.
+Stack: JavaScript, React, Vite, Leaflet, Turf, IndexedDB.
+Read PROJECT_CONTEXT.md first — especially §12 Current status and §13 Next tasks.
+Do not re-scaffold; extend the existing codebase.
+```
