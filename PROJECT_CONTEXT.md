@@ -72,7 +72,9 @@ See `package.json`. Core:
 | `src/lib/leafletIcons.js` | Fix Vite marker icon paths |
 | `src/hooks/useGeolocation.js` | watchPosition start/pause/stop |
 | `src/components/MapView.jsx` | MapContainer, streets/satellite tiles, `followMode` pan/none, fitBounds once |
-| `src/components/BoundarySetup.jsx` | Satellite/street toggle (no map remount), search jump, GeoJSON import |
+| `src/components/BoundarySetup.jsx` | Place autocomplete (Nominatim), satellite/street toggle, GeoJSON import |
+| `src/components/PlaceAutocomplete.jsx` | Debounced place search dropdown, explicit select only |
+| `src/lib/geocode.js` | Nominatim search, distance sort nearest-first |
 | `src/components/PolygonDrawTool.jsx` | Click-to-add polygon vertices, undo, close (replaces leaflet-draw) |
 | `src/components/TrackScreen.jsx` | GPS track, manual mark mode, undo mark, pan-only follow |
 | `src/components/CoverageLayer.jsx` | Green/red grid; clickable when `interactive` |
@@ -143,7 +145,7 @@ See `package.json`. Core:
 | Screen | Component | Actions |
 | ------ | --------- | ------- |
 | Areas | `AreaList` | New area, edit, delete, start track |
-| Setup | `BoundarySetup` | Satellite+labels / Street toggle; Start drawing → tap corners → Close polygon; import, save |
+| Setup | `BoundarySetup` | Place autocomplete (pick suggestion to pan map); draw boundary; import, save |
 | Track | `TrackScreen` | Start/Pause/Stop, zoom freely, Mark cells manually + undo |
 | History | `SessionHistory` | List completed, export GeoJSON/GPX, delete |
 
@@ -214,6 +216,7 @@ npm run preview  # preview production build
 | Polygon “stops” at 3 points | Fixed — custom draw tool; use Close polygon button (≥3 corners) |
 | Map resets on Satellite/Street | Fixed — do not put `mapStyle` in MapView `key`; tiles swap in place |
 | Satellite has no labels | Fixed — Esri Boundaries and Places overlay on imagery |
+| Wrong place on search | Fixed — autocomplete list, nearest first; map moves only on explicit pick |
 
 ---
 

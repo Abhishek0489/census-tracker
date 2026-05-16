@@ -5,6 +5,7 @@ import {
   PolygonDrawToolbar,
   usePolygonDraw,
 } from './PolygonDrawTool';
+import { PlaceAutocomplete } from './PlaceAutocomplete';
 import { DEFAULT_GRID_CELL_SIZE_M, isValidClosedPolygon, parseGeoJsonPolygon } from '../lib/geo';
 import { saveArea } from '../lib/storage';
 
@@ -13,7 +14,6 @@ export function BoundarySetup({ center, onSaved, onCancel, editArea }) {
   const [boundary, setBoundary] = useState(editArea?.boundary ?? null);
   const [error, setError] = useState('');
   const [closedMsg, setClosedMsg] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
   const [mapCenter, setMapCenter] = useState(center);
   const [mapStyle, setMapStyle] = useState('satellite');
   const [searchJumpId, setSearchJumpId] = useState(0);
@@ -70,24 +70,10 @@ export function BoundarySetup({ center, onSaved, onCancel, editArea }) {
     reader.readAsText(file);
   };
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
-    try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1`,
-        { headers: { 'Accept-Language': 'en' } },
-      );
-      const data = await res.json();
-      if (data[0]) {
-        setMapCenter([parseFloat(data[0].lat), parseFloat(data[0].lon)]);
-        setSearchJumpId((id) => id + 1);
-        setError('');
-      } else {
-        setError('Place not found');
-      }
-    } catch {
-      setError('Search failed — check internet connection');
-    }
+  const handlePlaceSelect = (place) => {
+    setMapCenter([place.lat, place.lng]);
+    setSearchJumpId((id) => id + 1);
+    setError('');
   };
 
   return (
@@ -103,11 +89,12 @@ export function BoundarySetup({ center, onSaved, onCancel, editArea }) {
       </header>
 
       <div className="setup-form">
-        <input
-          type="text"
-          placeholder="Area name (e.g. Ward 12 Block A)"
+        <PlaceAutocomplete
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={setName}
+          userLocation={center}
+          onPlaceSelect={handlePlaceSelect}
+          placeholder="Area name or place (e.g. Ward 12, Karol Bagh)"
         />
         <div className="map-style-toggle">
           <button
@@ -125,17 +112,6 @@ export function BoundarySetup({ center, onSaved, onCancel, editArea }) {
             Street
           </button>
         </div>
-        <div className="search-row">
-          <input
-            type="text"
-            placeholder="Search place..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          <button type="button" className="btn-secondary" onClick={handleSearch}>
-            Go
-          </button>
-        </div>
         <label className="import-label">
           Import GeoJSON
           <input type="file" accept=".json,.geojson" onChange={handleImport} hidden />
@@ -151,6 +127,9 @@ export function BoundarySetup({ center, onSaved, onCancel, editArea }) {
         {error && <p className="error-text">{error}</p>}
         {closedMsg && <p className="success-text">{closedMsg}</p>}
         <ol className="draw-steps">
+          <li>
+            Type a place name and <strong>pick from suggestions</strong> (nearest shown first) to move the map
+          </li>
           <li>
             Tap <strong>Start drawing boundary</strong>, then tap each corner on the map
           </li>
