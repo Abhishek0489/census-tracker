@@ -93,3 +93,53 @@ export function formatPlaceDistance(meters) {
   if (meters < 1000) return `${Math.round(meters)} m away`;
   return `${(meters / 1000).toFixed(1)} km away`;
 }
+
+/**
+ * Parse lat/lng from free text (planner "go to coordinates").
+ * Accepts: "28.61, 77.21", "28.61 77.21", "77.21, 28.61" (auto-detects if one value > 90).
+ * @returns {{ lat: number, lng: number } | null}
+ */
+export function parseCoordinates(text) {
+  const cleaned = text
+    .trim()
+    .replace(/[°'"NSEWnsew]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!cleaned) return null;
+
+  const parts = cleaned.split(/[,;\s]+/).filter(Boolean);
+  if (parts.length < 2) return null;
+
+  const a = parseFloat(parts[0]);
+  const b = parseFloat(parts[1]);
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+
+  let lat;
+  let lng;
+
+  const aIsLat = Math.abs(a) <= 90;
+  const bIsLat = Math.abs(b) <= 90;
+  const aIsLng = Math.abs(a) <= 180;
+  const bIsLng = Math.abs(b) <= 180;
+
+  if (Math.abs(a) > 90 && Math.abs(b) <= 90) {
+    lng = a;
+    lat = b;
+  } else if (Math.abs(b) > 90 && Math.abs(a) <= 90) {
+    lat = a;
+    lng = b;
+  } else if (aIsLat && bIsLng && !bIsLat) {
+    lat = a;
+    lng = b;
+  } else if (bIsLat && aIsLng && !aIsLat) {
+    lat = b;
+    lng = a;
+  } else {
+    lat = a;
+    lng = b;
+  }
+
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+
+  return { lat, lng };
+}
