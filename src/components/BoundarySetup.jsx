@@ -6,7 +6,12 @@ import {
   usePolygonDraw,
 } from './PolygonDrawTool';
 import { PlaceAutocomplete } from './PlaceAutocomplete';
-import { DEFAULT_GRID_CELL_SIZE_M, isValidClosedPolygon, parseGeoJsonPolygon } from '../lib/geo';
+import { parseAreaPackage } from '../lib/areaPackage';
+import {
+  GRID_CELL_SIZE_OPTIONS,
+  isValidClosedPolygon,
+  resolveGridCellSizeM,
+} from '../lib/geo';
 import { saveArea } from '../lib/storage';
 
 export function BoundarySetup({ center, onSaved, onCancel, editArea }) {
@@ -17,6 +22,9 @@ export function BoundarySetup({ center, onSaved, onCancel, editArea }) {
   const [mapCenter, setMapCenter] = useState(center);
   const [mapStyle, setMapStyle] = useState('satellite');
   const [searchJumpId, setSearchJumpId] = useState(0);
+  const [gridCellSizeM, setGridCellSizeM] = useState(
+    () => resolveGridCellSizeM(editArea),
+  );
 
   const draw = usePolygonDraw({
     onCreated: (poly) => {
@@ -47,7 +55,7 @@ export function BoundarySetup({ center, onSaved, onCancel, editArea }) {
       name: name.trim(),
       boundary,
       createdAt: editArea?.createdAt ?? Date.now(),
-      gridCellSizeM: editArea?.gridCellSizeM ?? DEFAULT_GRID_CELL_SIZE_M,
+      gridCellSizeM,
     };
     await saveArea(area);
     onSaved(area);
@@ -58,13 +66,15 @@ export function BoundarySetup({ center, onSaved, onCancel, editArea }) {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      const poly = parseGeoJsonPolygon(reader.result);
-      if (poly) {
-        setBoundary(poly);
+      const parsed = parseAreaPackage(reader.result, file.name);
+      if (parsed?.boundary) {
+        setBoundary(parsed.boundary);
+        if (parsed.name) setName(parsed.name);
+        if (parsed.gridCellSizeM) setGridCellSizeM(resolveGridCellSizeM(parsed));
         setError('');
         setClosedMsg('Boundary loaded from file');
       } else {
-        setError('Could not parse GeoJSON polygon from file');
+        setError('Could not parse area file');
       }
     };
     reader.readAsText(file);
@@ -88,6 +98,24 @@ export function BoundarySetup({ center, onSaved, onCancel, editArea }) {
         </button>
       </header>
 
+      <div className={`map-wrap setup-map ${draw.drawing ? 'draw-mode-active' : ''}`}>
+        <MapView
+          key={`map-${searchJumpId}`}
+          center={mapCenter}
+          zoom={16}
+          baseLayer={mapStyle}
+          followMode="none"
+        >
+          <PolygonDrawMapLayers
+            drawing={draw.drawing}
+            vertices={draw.vertices}
+            closedBoundary={boundary}
+            onMapClick={draw.handleMapClick}
+            fitBoundary={editArea?.boundary ?? boundary}
+          />
+        </MapView>
+      </div>
+
       <div className="setup-form">
         <PlaceAutocomplete
           value={name}
@@ -96,6 +124,26 @@ export function BoundarySetup({ center, onSaved, onCancel, editArea }) {
           onPlaceSelect={handlePlaceSelect}
           placeholder="Area name or place (e.g. Ward 12, Karol Bagh)"
         />
+        <label className="grid-size-field">
+          <span className="grid-size-label">Coverage cell size</span>
+          <select
+            value={gridCellSizeM}
+            onChange={(e) => setGridCellSizeM(Number(e.target.value))}
+          >
+            {GRID_CELL_SIZE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label} — {opt.hint}
+              </option>
+            ))}
+          </select>
+        </label>
+        {editArea &&
+          resolveGridCellSizeM(editArea) !== gridCellSizeM && (
+            <p className="hint grid-size-warning">
+              Changing cell size uses a new grid on the next track session. Past session marks may not line up.
+            </p>
+          )}
+        <p className="hint setup-hint-desktop">Smaller cells = finer gaps map; very large areas may feel slower.</p>
         <div className="map-style-toggle">
           <button
             type="button"
@@ -113,8 +161,13 @@ export function BoundarySetup({ center, onSaved, onCancel, editArea }) {
           </button>
         </div>
         <label className="import-label">
-          Import GeoJSON
-          <input type="file" accept=".json,.geojson" onChange={handleImport} hidden />
+          Import area file
+          <input
+            type="file"
+            accept=".json,.geojson,.census-area.json,application/json"
+            onChange={handleImport}
+            hidden
+          />
         </label>
         <PolygonDrawToolbar
           drawing={draw.drawing}
@@ -126,36 +179,21 @@ export function BoundarySetup({ center, onSaved, onCancel, editArea }) {
         />
         {error && <p className="error-text">{error}</p>}
         {closedMsg && <p className="success-text">{closedMsg}</p>}
-        <ol className="draw-steps">
-          <li>
-            Type a place name and <strong>pick from suggestions</strong> (nearest shown first) to move the map
-          </li>
-          <li>
-            Tap <strong>Start drawing boundary</strong>, then tap each corner on the map
-          </li>
-          <li>Add as many points as you need — there is no 3-point limit</li>
-          <li>
-            When done, tap <strong>Close polygon</strong> (needs at least 3 corners)
-          </li>
-        </ol>
-      </div>
-
-      <div className={`map-wrap ${draw.drawing ? 'draw-mode-active' : ''}`}>
-        <MapView
-          key={`map-${searchJumpId}`}
-          center={mapCenter}
-          zoom={16}
-          baseLayer={mapStyle}
-          followMode="none"
-        >
-          <PolygonDrawMapLayers
-            drawing={draw.drawing}
-            vertices={draw.vertices}
-            closedBoundary={boundary}
-            onMapClick={draw.handleMapClick}
-            fitBoundary={editArea?.boundary ?? boundary}
-          />
-        </MapView>
+        <details className="draw-tips">
+          <summary>Drawing tips</summary>
+          <ol className="draw-steps">
+            <li>
+              Type a place name and <strong>pick from suggestions</strong> (nearest shown first) to move the map
+            </li>
+            <li>
+              Tap <strong>Start drawing boundary</strong>, then tap each corner on the map above
+            </li>
+            <li>Add as many points as you need — there is no 3-point limit</li>
+            <li>
+              When done, tap <strong>Close polygon</strong> (needs at least 3 corners)
+            </li>
+          </ol>
+        </details>
       </div>
     </div>
   );

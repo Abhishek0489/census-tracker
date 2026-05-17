@@ -4,6 +4,7 @@ import { BoundarySetup } from './components/BoundarySetup';
 import { TrackScreen } from './components/TrackScreen';
 import { SessionHistory } from './components/SessionHistory';
 import { HelpModal } from './components/HelpModal';
+import { ImportArea } from './components/ImportArea';
 import { fixLeafletIcons } from './lib/leafletIcons';
 import './App.css';
 
@@ -31,7 +32,11 @@ export default function App() {
     <nav className="bottom-nav">
       <button
         type="button"
-        className={screen === 'areas' || screen === 'setup' || screen === 'track' ? 'active' : ''}
+        className={
+          screen === 'areas' || screen === 'setup' || screen === 'track' || screen === 'import'
+            ? 'active'
+            : ''
+        }
         onClick={() => {
           setScreen('areas');
           setEditArea(null);
@@ -55,7 +60,7 @@ export default function App() {
   return (
     <div className="app">
       {screen === 'areas' && (
-        <>
+        <div className="app-shell">
           <AreaList
             onSelectArea={(area) => {
               setSelectedArea(area);
@@ -65,13 +70,18 @@ export default function App() {
               setEditArea(null);
               setScreen('setup');
             }}
+            onImportArea={() => setScreen('import')}
             onEditArea={(area) => {
               setEditArea(area);
               setScreen('setup');
             }}
           />
           {nav}
-        </>
+        </div>
+      )}
+
+      {screen === 'import' && (
+        <ImportArea onCancel={() => setScreen('areas')} onSaved={() => setScreen('areas')} />
       )}
 
       {screen === 'setup' && (
@@ -92,10 +102,10 @@ export default function App() {
       )}
 
       {screen === 'history' && (
-        <>
+        <div className="app-shell">
           <SessionHistory onBack={() => setScreen('areas')} />
           {nav}
-        </>
+        </div>
       )}
 
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}

@@ -12,6 +12,22 @@ import {
 export const DEFAULT_ACCURACY_THRESHOLD_M = 30;
 export const DEFAULT_GRID_CELL_SIZE_M = 40;
 
+/** Presets for area setup — smaller = finer coverage, more map cells */
+export const GRID_CELL_SIZE_OPTIONS = [
+  { value: 25, label: '25 m', hint: 'Narrow lanes' },
+  { value: 40, label: '40 m', hint: 'Default' },
+  { value: 60, label: '60 m', hint: 'Blocks' },
+  { value: 80, label: '80 m', hint: 'Large area' },
+];
+
+export function resolveGridCellSizeM(areaOrSize) {
+  if (typeof areaOrSize === 'number') {
+    return areaOrSize > 0 ? areaOrSize : DEFAULT_GRID_CELL_SIZE_M;
+  }
+  const m = areaOrSize?.gridCellSizeM;
+  return typeof m === 'number' && m > 0 ? m : DEFAULT_GRID_CELL_SIZE_M;
+}
+
 export function pointInBoundary(lat, lng, boundary) {
   return booleanPointInPolygon(point([lng, lat]), boundary);
 }
@@ -36,7 +52,7 @@ export function cellIdFromPosition([lng, lat]) {
 export function buildCoverageGrid(areaData) {
   const poly = areaData.boundary;
   const box = bbox(poly);
-  const cellKm = areaData.gridCellSizeM / 1000;
+  const cellKm = resolveGridCellSizeM(areaData) / 1000;
   const grid = squareGrid(box, cellKm, { units: 'kilometers', mask: poly });
   const cells = [];
 

@@ -11,6 +11,7 @@ import {
   formatDuration,
   markVisitedCells,
   pointInBoundary,
+  resolveGridCellSizeM,
   trackDistanceMeters,
 } from '../lib/geo';
 import { getActiveSession, saveSession } from '../lib/storage';
@@ -44,6 +45,7 @@ export function TrackScreen({ area, onBack, onSessionEnd }) {
   const [markMode, setMarkMode] = useState(false);
   const [markToast, setMarkToast] = useState('');
   const [manualMarkStack, setManualMarkStack] = useState([]);
+  const [mapStyle, setMapStyle] = useState('satellite');
   const sessionRef = useRef(null);
   const geo = useGeolocation();
 
@@ -202,6 +204,7 @@ export function TrackScreen({ area, onBack, onSessionEnd }) {
       <div className="stats-bar">
         <span>{formatDistance(dist)}</span>
         <span>{formatDuration(elapsed || Date.now() - session.startedAt)}</span>
+        <span className="cell-size-stat">{resolveGridCellSizeM(area)} m cells</span>
         <span className={inside ? 'inside' : 'outside'}>
           {geo.position ? (inside ? 'Inside area' : 'Outside area') : 'Waiting for GPS...'}
         </span>
@@ -215,10 +218,26 @@ export function TrackScreen({ area, onBack, onSessionEnd }) {
       )}
 
       <div className={`map-wrap ${markMode ? 'mark-mode-active' : ''}`}>
+        <div className="map-style-toggle map-style-toggle--overlay">
+          <button
+            type="button"
+            className={mapStyle === 'satellite' ? 'active' : ''}
+            onClick={() => setMapStyle('satellite')}
+          >
+            Satellite
+          </button>
+          <button
+            type="button"
+            className={mapStyle === 'streets' ? 'active' : ''}
+            onClick={() => setMapStyle('streets')}
+          >
+            Street
+          </button>
+        </div>
         <MapView
           center={center}
           zoom={15}
-          baseLayer="streets"
+          baseLayer={mapStyle}
           zoomControl
           followMode={geo.tracking ? 'pan' : 'none'}
           followCenter={followCenter}
@@ -253,7 +272,8 @@ export function TrackScreen({ area, onBack, onSessionEnd }) {
         </MapView>
       </div>
 
-      <div className="track-controls">
+      <div className="track-footer">
+        <div className="track-controls">
         <button
           type="button"
           className={`btn-secondary mark-toggle ${markMode ? 'active' : ''}`}
@@ -286,11 +306,12 @@ export function TrackScreen({ area, onBack, onSessionEnd }) {
             Stop session
           </button>
         )}
+        </div>
+        <p className="track-hints">
+          Keep screen on for GPS · Pinch map to zoom · Coverage is approximate
+        </p>
+        {geo.error && <p className="error-text track-error">{geo.error}</p>}
       </div>
-
-      <p className="battery-hint">Keep this screen on for best GPS tracking. Pinch or scroll to zoom.</p>
-      <p className="disclaimer">Coverage map is approximate — not official census proof.</p>
-      {geo.error && <p className="error-text">{geo.error}</p>}
     </div>
   );
 }

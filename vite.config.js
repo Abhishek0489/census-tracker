@@ -1,8 +1,13 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import { resolve } from 'path';
+
+// GitHub Pages uses /repo-name/ — Vercel/Netlify use /
+const base = process.env.BASE_PATH || '/';
 
 export default defineConfig({
+  base,
   plugins: [
     react(),
     VitePWA({
@@ -40,4 +45,12 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        planner: resolve(__dirname, 'planner.html'),
+      },
+    },
+  },
 });

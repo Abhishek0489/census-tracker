@@ -1,7 +1,8 @@
 import { deleteArea, getAllAreas } from '../lib/storage';
+import { resolveGridCellSizeM } from '../lib/geo';
 import { useEffect, useState } from 'react';
 
-export function AreaList({ onSelectArea, onNewArea, onEditArea }) {
+export function AreaList({ onSelectArea, onNewArea, onImportArea, onEditArea }) {
   const [areas, setAreas] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -31,10 +32,16 @@ export function AreaList({ onSelectArea, onNewArea, onEditArea }) {
 
       <p className="tagline">Draw your assigned area, then track where you have walked.</p>
 
-      <button type="button" className="btn-large btn-primary" onClick={onNewArea}>
-        + Draw new area
-      </button>
+      <div className="areas-cta-row">
+        <button type="button" className="btn-large btn-primary areas-cta" onClick={onNewArea}>
+          + Draw new area
+        </button>
+        <button type="button" className="btn-large btn-secondary areas-cta" onClick={onImportArea}>
+          Import area
+        </button>
+      </div>
 
+      <div className="screen-body">
       {loading ? (
         <p className="loading">Loading areas...</p>
       ) : areas.length === 0 ? (
@@ -45,7 +52,9 @@ export function AreaList({ onSelectArea, onNewArea, onEditArea }) {
             <li key={area.id}>
               <button type="button" className="area-card" onClick={() => onSelectArea(area)}>
                 <strong>{area.name}</strong>
-                <span>{new Date(area.createdAt).toLocaleDateString()}</span>
+                <span>
+                  {resolveGridCellSizeM(area)} m cells · {new Date(area.createdAt).toLocaleDateString()}
+                </span>
               </button>
               <div className="area-actions">
                 <button type="button" className="btn-ghost" onClick={() => onEditArea(area)}>
@@ -59,6 +68,7 @@ export function AreaList({ onSelectArea, onNewArea, onEditArea }) {
           ))}
         </ul>
       )}
+      </div>
     </div>
   );
 }

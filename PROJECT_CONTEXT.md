@@ -44,7 +44,9 @@ flowchart LR
   Track --> Grid
 ```
 
-**Screens (`App.jsx`):** `areas` | `setup` | `track` | `history`
+**Screens (`App.jsx`):** `areas` | `setup` | `import` | `track` | `history`
+
+**Desktop planner (`planner.html`):** export-only — draw boundary, download `.census-area.json` (no IndexedDB). Uses `useWatchLocation` for blue-dot current position on map.
 
 ---
 
@@ -69,8 +71,14 @@ See `package.json`. Core:
 | `src/App.css` | Mobile-first dark UI |
 | `src/lib/storage.js` | IndexedDB: `areas`, `sessions` |
 | `src/lib/geo.js` | Grid, coverage %, distance, export, GeoJSON parse |
+| `src/lib/areaPackage.js` | Export/import `.census-area.json` + GeoJSON fallback |
+| `planner.html` / `src/planner/` | Desktop area planner (multi-page build) |
+| `src/components/ImportArea.jsx` | Mobile import area file → IndexedDB |
 | `src/lib/leafletIcons.js` | Fix Vite marker icon paths |
 | `src/hooks/useGeolocation.js` | watchPosition start/pause/stop |
+| `src/hooks/useWatchLocation.js` | Continuous GPS for planner blue dot |
+| `src/components/UserLocationMarker.jsx` | Blue CircleMarker for current position |
+| `src/components/MapPanTo.jsx` | Pan map without zoom change |
 | `src/components/MapView.jsx` | MapContainer, streets/satellite tiles, `followMode` pan/none, fitBounds once |
 | `src/components/BoundarySetup.jsx` | Place autocomplete (Nominatim), satellite/street toggle, GeoJSON import |
 | `src/components/PlaceAutocomplete.jsx` | Debounced place search dropdown, explicit select only |
@@ -121,6 +129,21 @@ See `package.json`. Core:
 - DB: `census-tracker` v1
 - Stores: `areas` (key `id`), `sessions` (key `id`)
 
+### Area package file (desktop → phone)
+
+```js
+{
+  format: 'census-tracker-area',
+  version: 1,
+  name: string,
+  gridCellSizeM: number,
+  boundary: Polygon,
+  exportedAt: number
+}
+```
+
+Transfer: download on `/planner.html` → send file → **Import area** on mobile.
+
 ---
 
 ## 7. Algorithms
@@ -166,8 +189,8 @@ Bottom nav: Areas, History, Help (modal).
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173
-npm run build    # output: dist/
+npm run dev      # mobile: http://localhost:5173 — planner: /planner.html
+npm run build    # output: dist/ (index.html + planner.html)
 npm run preview  # preview production build
 ```
 
@@ -191,6 +214,9 @@ npm run preview  # preview production build
 - [x] README + PROJECT_CONTEXT
 - [x] Map UX — satellite toggle, polygon close hints, zoom fix, manual cell marking
 - [x] Map draw bugfixes — stable layer switch, satellite labels, custom polygon draw tool
+- [x] Grid cell size setting in area setup (25–80 m presets)
+- [x] Desktop planner (`/planner.html`) + area package export
+- [x] Mobile **Import area** screen + shared `areaPackage.js` parser
 - [ ] Phase 5 — Optional: cloud sync, Capacitor, KML import
 
 ---
@@ -198,9 +224,9 @@ npm run preview  # preview production build
 ## 13. Next tasks
 
 1. Test satellite tiles + manual mark mode on real phone (HTTPS).
-2. Tune `gridCellSizeM` per environment (narrow lanes → smaller cells).
-3. Add edit grid cell size in area settings UI (optional).
-4. Consider Capacitor if background GPS with screen off is required.
+2. Commit/push deployment config (`vercel.json`, `netlify.toml`, GitHub Pages workflow) if not pushed yet.
+3. Consider Capacitor if background GPS with screen off is required.
+4. Optional: KML import, Hindi UI, cloud sync.
 
 ---
 

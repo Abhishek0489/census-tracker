@@ -1,0 +1,221 @@
+@import '../App.css';
+
+.planner-app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #0f172a;
+  color: #f8fafc;
+}
+
+.planner-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background: #1e293b;
+  border-bottom: 1px solid #334155;
+}
+
+.planner-header h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.35rem;
+}
+
+.planner-subtitle {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  max-width: 36rem;
+}
+
+.planner-link-mobile {
+  flex-shrink: 0;
+  color: #93c5fd;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #475569;
+  border-radius: 8px;
+}
+
+.planner-link-mobile:hover {
+  background: #334155;
+}
+
+.planner-layout {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.planner-sidebar {
+  width: 320px;
+  flex-shrink: 0;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: #1e293b;
+  border-right: 1px solid #334155;
+  overflow-y: auto;
+}
+
+.planner-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.planner-field select {
+  padding: 0.55rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid #475569;
+  background: #0f172a;
+  color: #f8fafc;
+  font-size: 0.95rem;
+}
+
+.planner-location-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.planner-location-status {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #93c5fd;
+  line-height: 1.4;
+}
+
+.planner-location-error {
+  color: #fbbf24;
+}
+
+.planner-location-accuracy {
+  color: #94a3b8;
+  font-size: 0.8rem;
+}
+
+.planner-btn-location {
+  border: 1px solid #475569;
+  border-radius: 8px;
+  padding: 0.55rem 0.75rem;
+  background: #0f172a;
+  color: #93c5fd;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.planner-btn-location:hover:not(:disabled) {
+  background: #334155;
+}
+
+.planner-btn-location:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.planner-export {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.planner-btn-primary,
+.planner-btn-secondary {
+  border: none;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.planner-btn-primary {
+  background: #2563eb;
+  color: #fff;
+}
+
+.planner-btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.planner-btn-secondary {
+  background: #334155;
+  color: #fff;
+}
+
+.planner-btn-secondary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.planner-error {
+  color: #f87171;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.planner-success {
+  color: #4ade80;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.planner-steps {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+  font-size: 0.85rem;
+  color: #94a3b8;
+  line-height: 1.55;
+}
+
+.planner-map {
+  flex: 1;
+  min-width: 0;
+  min-height: 400px;
+  position: relative;
+}
+
+.planner-map .leaflet-container,
+.planner-map .map-container {
+  width: 100%;
+  height: 100%;
+  min-height: calc(100vh - 5rem);
+}
+
+.planner-map.draw-mode-active .leaflet-container {
+  cursor: crosshair;
+}
+
+.planner-sidebar .map-style-toggle {
+  margin: 0;
+}
+
+.planner-sidebar .draw-toolbar {
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .planner-layout {
+    flex-direction: column-reverse;
+  }
+
+  .planner-sidebar {
+    width: 100%;
+    max-height: 45vh;
+    border-right: none;
+    border-top: 1px solid #334155;
+  }
+
+  .planner-map {
+    min-height: 50vh;
+  }
+}

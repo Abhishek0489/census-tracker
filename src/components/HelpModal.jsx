@@ -5,7 +5,8 @@ export function HelpModal({ onClose }) {
         <h2>How to use</h2>
         <ol>
           <li>
-            <strong>Draw area</strong> — At home on Wi‑Fi, trace your assigned boundary on the map and save it.
+            <strong>Get an area</strong> — Draw on the phone, or import a file from the desktop planner
+            (.census-area.json).
           </li>
           <li>
             <strong>Start tracking</strong> — In the field, open the area and tap Start. Walk your streets normally.

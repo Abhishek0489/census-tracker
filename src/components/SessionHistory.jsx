@@ -62,6 +62,7 @@ export function SessionHistory({ onBack }) {
         <h1>Session history</h1>
       </header>
 
+      <div className="screen-body">
       {loading ? (
         <p className="loading">Loading...</p>
       ) : sessions.length === 0 ? (
@@ -94,6 +95,7 @@ export function SessionHistory({ onBack }) {
           })}
         </ul>
       )}
+      </div>
     </div>
   );
 }
